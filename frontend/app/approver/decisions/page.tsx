@@ -25,7 +25,14 @@ export default function ApproverDecisions() {
     setError(null);
     apiFetch(`/api/approvals?status=${status}`)
       .then((res: unknown) => {
-        const rows = Array.isArray(res?.data) ? (res.data as Approval[]) : (res as Approval[]);
+        const hasDataArray = (v: unknown): v is { data: Approval[] } =>
+          typeof v === 'object' && v !== null && Array.isArray((v as any).data);
+
+        const rows = hasDataArray(res)
+          ? res.data
+          : Array.isArray(res)
+            ? (res as Approval[])
+            : [];
         // eslint-disable-next-line no-console
         console.log('[Approver] approvals list:', rows);
         setList(rows);

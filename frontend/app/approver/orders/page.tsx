@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import Link from "next/link";
 import type { Order } from "@/types";
 import { PageState } from "@/components/ui/page-state";
 
-export default function ApproverOrders() {
+export function ApproverOrdersView({ baseRoute = "/approver/orders" }: { baseRoute?: string }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,8 +60,8 @@ export default function ApproverOrders() {
             <li key={o.id} className="border p-3 flex items-center justify-between">
               <div>Order #{o.id} — {o.status}</div>
               <div className="space-x-3">
-                <a className="underline" href={`/approver/orders/${o.id}`}>Review</a>
-                <a className="underline" href={`/approver/orders/${o.id}`}>View Details</a>
+                <Link className="underline" href={`${baseRoute}/${o.id}`}>Review</Link>
+                <Link className="underline" href={`${baseRoute}/${o.id}`}>View Details</Link>
               </div>
             </li>
           ))}
@@ -68,4 +69,7 @@ export default function ApproverOrders() {
       )}
     </div>
   );
+}
+export default function ApproverOrders() {
+  return <ApproverOrdersView baseRoute="/approver/orders" />;
 }

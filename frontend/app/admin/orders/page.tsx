@@ -1,8 +1,7 @@
 "use client";
 
-import ApproverOrders from "@/app/approver/orders/page";
+import { ApproverOrdersView } from "@/app/approver/orders/page";
 
 export default function AdminOrders() {
-  return <ApproverOrders />;
+  return <ApproverOrdersView baseRoute="/admin/orders" />;
 }
-

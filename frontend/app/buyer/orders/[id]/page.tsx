@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { OrderDetails } from "@/components/order-details";
 import { openInvoicePdf, downloadInvoiceExcel } from "@/lib/invoice";
 import { PageState } from "@/components/ui/page-state";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 export default function BuyerOrderDetail() {
   const params = useParams<{ id: string }>();
@@ -22,25 +23,40 @@ export default function BuyerOrderDetail() {
   const [issueSubmitting, setIssueSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const hydrated = useAuthStore((s) => s.hydrated);
+
   useEffect(() => {
+    if (!hydrated) return; // wait for auth/token hydration to avoid 401/loops
     let mounted = true;
-    Promise.all([
-      apiFetch(`/api/orders/${id}`),
-      apiFetch(`/api/orders/${id}/tracking`).catch(() => null),
-      apiFetch(`/api/orders/${id}/issues`).catch(() => []),
-      apiFetch(`/api/orders/${id}/full-details`).catch(() => null),
-    ])
-      .then(async ([o, s, is, details]) => {
-        if (mounted) {
-          setOrder(o as Order); setShipment(s); setIssues(Array.isArray(is) ? is : []); setFullDetails(details);
-          initAck(o as Order);
-          try { await apiFetch(`/api/invoices/by-order/${(o as any).id}`); setInvoiceExists(true); } catch { setInvoiceExists(false); }
+    (async () => {
+      try {
+        setLoading(true); setError(null);
+        const [o, s, is, details] = await Promise.all([
+          apiFetch(`/api/orders/${id}`),
+          apiFetch(`/api/orders/${id}/tracking`).catch(() => null),
+          apiFetch(`/api/orders/${id}/issues`).catch(() => []),
+          apiFetch(`/api/orders/${id}/full-details`).catch(() => null),
+        ]);
+        if (!mounted) return;
+        setOrder(o as Order);
+        setShipment(s);
+        setIssues(Array.isArray(is) ? is : []);
+        setFullDetails(details);
+        initAck(o as Order);
+        try {
+          await apiFetch(`/api/invoices/by-order/${(o as any).id}`);
+          if (mounted) setInvoiceExists(true);
+        } catch {
+          if (mounted) setInvoiceExists(false);
         }
-      })
-      .catch((e:any) => setError(e?.message || 'Failed to load'))
-      .finally(() => setLoading(false));
+      } catch (e:any) {
+        if (mounted) setError(e?.message || 'Failed to load');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
     return () => { mounted = false; };
-  }, [id]);
+  }, [id, hydrated]);
 
   // Acknowledgement state
   const [ackItems, setAckItems] = useState<{ order_item_id:number; received_qty:number; status:'received'|'not_received'; comment:string; delivered_qty:number; product_name:string; ordered_qty:number; approved_qty:number }[]>([]);
@@ -75,13 +91,19 @@ export default function BuyerOrderDetail() {
     const forbidden = /\b403\b/.test(error);
     return <div className="p-6"><PageState variant={forbidden? 'forbidden':'error'} title={forbidden? 'Access denied' : 'Failed to load order'} description={error} /></div>;
   }
-  if (!order) return <div className="p-6"><PageState variant="empty" title="Order not found" /></div>;
+  if (!order) return <div className="p-6"><PageState variant="loading" title="Loading order" description="Fetching order details…" /></div>;
   const ack = fullDetails?.acknowledgement || null;
   const hasAckMeaningful = !!(ack && (ack.employee_code || ack.receiver_name || ack.branch_manager_name || (typeof ack.rating === 'number') || (ack.remarks && String(ack.remarks).trim())));
   const ackItemsView = Array.isArray(fullDetails?.items)
     ? (fullDetails!.items as any[]).filter((it:any) => typeof it.received_qty === 'number')
     : [];
-  const ackExists = hasAckMeaningful || ackItemsView.length > 0;
+  // Consider acknowledgement existing only if there is meaningful received data (>0) or summary fields
+  const ackItemsHaveSignal = ackItemsView.some((it:any) => {
+    const rec = Number(it.received_qty ?? 0);
+    const st = (it.status || '').toString().trim();
+    return rec > 0 || (st.length > 0 && st !== 'not_received');
+  });
+  const ackExists = hasAckMeaningful || ackItemsHaveSignal;
   const beforeSubmit = order.status === 'delivered' && !ackExists;
 
   // Form validation helper
@@ -224,9 +246,10 @@ export default function BuyerOrderDetail() {
             <input className="border px-2 py-1" placeholder="Employee code" value={employee_code} onChange={(e) => setEmployeeCode(e.target.value)} />
             <input className="border px-2 py-1" placeholder="Receiver name" value={receiver_name} onChange={(e) => setReceiverName(e.target.value)} />
             <input className="border px-2 py-1" placeholder="Branch manager name" value={branch_manager_name} onChange={(e) => setBranchManagerName(e.target.value)} />
-            <select className="border px-2 py-1" value={rating} onChange={(e) => setRating(parseInt(e.target.value))}>
-              {[1,2,3,4,5].map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
+          <label className="text-xs text-muted-foreground">Rating (1-5)</label>
+          <select className="border px-2 py-1" value={rating} onChange={(e) => setRating(parseInt(e.target.value))}>
+            {[1,2,3,4,5].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
             <textarea className="border p-2 md:col-span-2" placeholder="Remarks (optional)" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
           </div>
           <label className="flex items-center gap-2">

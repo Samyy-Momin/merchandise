@@ -1,0 +1,342 @@
+openapi: 3.1.0
+info:
+  title: OneFoodDialer 2025 Merchandise Service API
+  description: |
+    Merchandise service for SKU management, merchandise orders, approvals, dispatch workflows, acknowledgements, and invoicing.
+
+    Public endpoints are exposed under `/api/v2/merchandise/*`, while tenant lifecycle endpoints remain internal.
+  version: 1.0.0
+servers:
+  - url: https://api.onefooddialer.com
+    description: Production API gateway
+  - url: http://localhost:8000
+    description: Local Kong gateway
+paths:
+  /api/v2/merchandise/health:
+    get:
+      summary: Merchandise health check
+      tags: [System]
+      responses:
+        '200':
+          description: Merchandise service health payload
+  /api/v2/merchandise/skus:
+    get:
+      summary: List SKUs
+      tags: [SKUs]
+      responses:
+        '200':
+          description: SKU collection
+    post:
+      summary: Create SKU
+      tags: [SKUs]
+      responses:
+        '201':
+          description: SKU created
+  /api/v2/merchandise/skus/{id}:
+    get:
+      summary: Get SKU
+      tags: [SKUs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: SKU details
+    put:
+      summary: Update SKU
+      tags: [SKUs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: SKU updated
+    delete:
+      summary: Delete SKU
+      tags: [SKUs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: SKU deleted
+  /api/v2/merchandise/orders:
+    get:
+      summary: List merchandise orders
+      tags: [Orders]
+      responses:
+        '200':
+          description: Merchandise order list
+    post:
+      summary: Create merchandise order
+      tags: [Orders]
+      responses:
+        '201':
+          description: Merchandise order created
+  /api/v2/merchandise/orders/{id}:
+    get:
+      summary: Get merchandise order
+      tags: [Orders]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Merchandise order details
+    delete:
+      summary: Cancel merchandise order
+      tags: [Orders]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Merchandise order cancelled
+  /api/v2/merchandise/orders/{id}/approve:
+    post:
+      summary: Approve merchandise order
+      tags: [Approvals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order approved
+  /api/v2/merchandise/orders/{id}/reject:
+    post:
+      summary: Reject merchandise order
+      tags: [Approvals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order rejected
+  /api/v2/merchandise/approvals:
+    post:
+      summary: Create approval workflow
+      tags: [Approvals]
+      responses:
+        '201':
+          description: Approval workflow created
+  /api/v2/merchandise/approvals/{id}/submit:
+    post:
+      summary: Submit approval workflow
+      tags: [Approvals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Approval submitted
+  /api/v2/merchandise/approvals/{id}/approve:
+    post:
+      summary: Approve approval workflow
+      tags: [Approvals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Approval accepted
+  /api/v2/merchandise/approvals/{id}/reject:
+    post:
+      summary: Reject approval workflow
+      tags: [Approvals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Approval rejected
+  /api/v2/merchandise/dispatches:
+    get:
+      summary: List dispatches
+      tags: [Dispatches]
+      responses:
+        '200':
+          description: Dispatch list
+  /api/v2/merchandise/orders/{id}/dispatch:
+    post:
+      summary: Dispatch merchandise order
+      tags: [Dispatches]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dispatch accepted
+  /api/v2/merchandise/orders/{id}/acknowledge:
+    post:
+      summary: Acknowledge merchandise delivery
+      tags: [Acknowledgements]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery acknowledgement accepted
+  /api/v2/merchandise/acknowledgements/{id}/approve:
+    post:
+      summary: Approve acknowledgement
+      tags: [Acknowledgements]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Acknowledgement approved
+  /api/v2/merchandise/acknowledgements/{id}/reject:
+    post:
+      summary: Reject acknowledgement
+      tags: [Acknowledgements]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Acknowledgement rejected
+  /api/v2/merchandise/invoices:
+    get:
+      summary: List merchandise invoices
+      tags: [Invoices]
+      responses:
+        '200':
+          description: Invoice list
+  /api/v2/merchandise/invoices/{id}:
+    get:
+      summary: Get merchandise invoice
+      tags: [Invoices]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoice details
+  /api/v2/merchandise/orders/{id}/invoice:
+    post:
+      summary: Create invoice for merchandise order
+      tags: [Invoices]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Invoice created
+  /api/v2/merchandise/invoices/{id}/payments:
+    post:
+      summary: Record merchandise invoice payment
+      tags: [Invoices]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment recorded
+  /api/v2/merchandise/invoices/{id}/download:
+    get:
+      summary: Download merchandise invoice
+      tags: [Invoices]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoice file download
+  /internal/tenants/{companyId}/bootstrap:
+    post:
+      summary: Bootstrap merchandise tenant state
+      tags: [Tenant Lifecycle]
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '202':
+          description: Tenant bootstrap requested
+  /internal/tenants/{companyId}/readiness:
+    get:
+      summary: Check merchandise tenant readiness
+      tags: [Tenant Lifecycle]
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Tenant readiness payload
+tags:
+  - name: System
+    description: Health endpoints
+  - name: SKUs
+    description: Merchandise SKU catalogue endpoints
+  - name: Orders
+    description: Merchandise order lifecycle endpoints
+  - name: Approvals
+    description: Approval workflow endpoints
+  - name: Dispatches
+    description: Dispatch orchestration endpoints
+  - name: Acknowledgements
+    description: Delivery acknowledgement endpoints
+  - name: Invoices
+    description: Merchandise invoice endpoints
+  - name: Tenant Lifecycle
+    description: Internal tenant bootstrap and readiness endpoints

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Address;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class AddressController extends Controller
 {
@@ -47,6 +48,8 @@ class AddressController extends Controller
             $addr = Address::create($data);
 
             return response()->json($addr, 201);
+        } catch (ValidationException $e) {
+            throw $e; // let Laravel return 422 with validation errors
         } catch (\Throwable $e) {
             Log::error('POST /api/addresses failed', ['message' => $e->getMessage()]);
             return response()->json(['message' => 'Server error'], 500);
@@ -75,6 +78,8 @@ class AddressController extends Controller
 
             $address->fill($data)->save();
             return response()->json($address);
+        } catch (ValidationException $e) {
+            throw $e; // return 422 automatically
         } catch (\Throwable $e) {
             Log::error('PUT /api/addresses/{id} failed', ['id' => $id, 'message' => $e->getMessage()]);
             return response()->json(['message' => 'Server error'], 500);

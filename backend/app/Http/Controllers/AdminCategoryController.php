@@ -23,7 +23,7 @@ class AdminCategoryController extends Controller
                 $slug = $base.'-'.$i; $i++;
             }
             $category = Category::create(['name' => $data['name'], 'slug' => $slug]);
-            return (new CategoryResource($category))->response();
+            return (new CategoryResource($category))->response()->setStatusCode(200);
         } catch (\Throwable $e) {
             Log::error('Admin create category failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Failed to create category'], 422);

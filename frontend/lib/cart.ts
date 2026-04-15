@@ -53,4 +53,3 @@ export function clearCart() {
 export function total(cart: Cart): number {
   return cart.reduce((sum, l) => sum + l.product.price * l.qty, 0);
 }
-

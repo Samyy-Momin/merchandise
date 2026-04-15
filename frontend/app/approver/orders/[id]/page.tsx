@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import type { Order, OrderItem } from "@/types";
 import { useParams, useRouter } from "next/navigation";
 import { openInvoicePdf, downloadInvoiceExcel } from "@/lib/invoice";
@@ -48,8 +49,8 @@ export default function ApproverOrderDetail() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  useEffect(() => { if (hydrated) load(); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, hydrated]);
 
   const setQty = (itemId: number, qty: number) => {
     setRows((prev) => prev.map((r) => {
@@ -96,7 +97,7 @@ export default function ApproverOrderDetail() {
     const forbidden = /\b403\b/.test(error);
     return <div className="p-6"><PageState variant={forbidden? 'forbidden':'error'} title={forbidden? 'Access denied' : 'Failed to load order'} description={error} /></div>;
   }
-  if (!order) return <div className="p-6"><PageState variant="empty" title="Order not found" /></div>;
+  if (!order) return <div className="p-6"><PageState variant="loading" title="Loading order" description="Fetching order details…" /></div>;
 
   return (
     <div className="space-y-6">
@@ -279,3 +280,4 @@ export default function ApproverOrderDetail() {
     </div>
   );
 }
+  const hydrated = useAuthStore((s) => s.hydrated);

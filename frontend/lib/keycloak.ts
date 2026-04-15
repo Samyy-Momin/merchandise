@@ -40,8 +40,8 @@ export async function initKeycloak(loginRequired = true): Promise<KeycloakInstan
   initPromise = keycloak
     .init({ onLoad: loginRequired ? "login-required" : undefined, checkLoginIframe: false })
     .then((authenticated) => {
-      if (!authenticated) {
-        // If not authenticated, trigger login
+      // Avoid forcing another login when using login-required.
+      if (!authenticated && !loginRequired) {
         keycloak!.login();
       }
 

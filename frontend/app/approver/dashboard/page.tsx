@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import Link from "next/link";
 import type { Order } from "@/types";
 
 export default function ApproverDashboard() {
@@ -49,7 +50,7 @@ export default function ApproverDashboard() {
       {error && <div className="text-sm text-red-600">{error}</div>}
       <div className="space-y-2 text-sm">
         <div>Pending approvals: {loading ? "…" : pendingCount}</div>
-        <div>Approved by me: {stats.approved} | Rejected by me: {stats.rejected} | Partial: {stats.partial} &nbsp; <a className="underline" href="/approver/decisions">View</a></div>
+        <div>Approved by me: {stats.approved} | Rejected by me: {stats.rejected} | Partial: {stats.partial} &nbsp; <Link className="underline" href="/approver/decisions">View</Link></div>
       </div>
     </div>
   );

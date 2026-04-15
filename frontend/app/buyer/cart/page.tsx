@@ -9,6 +9,7 @@ import type { Address } from "@/types";
 import { useEffect, useRef, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function BuyerCart() {
   const { cart, setQty, remove, clear, total } = useCart();
@@ -121,7 +122,7 @@ export default function BuyerCart() {
           <div className="text-sm">
             <div className="flex items-center justify-between">
               <div className="font-medium">Delivery Address</div>
-              <a href="/buyer/addresses" className="underline">Manage</a>
+              <Link href="/buyer/addresses" className="underline">Manage</Link>
             </div>
             
             {addresses.length === 0 ? (

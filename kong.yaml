@@ -1,0 +1,123 @@
+# Kong Declarative Configuration (Deck File)
+# ─────────────────────────────────────────────────────
+# Deploy with: deck sync --state kong.yaml
+# Validate with: deck validate --state kong.yaml
+# ─────────────────────────────────────────────────────
+
+_format_version: "3.0"
+_transform: true
+
+# ═════════════════════════════════════════════════════
+# Services
+# ═════════════════════════════════════════════════════
+
+services:
+  # ── Merchandise Service (your backend) ────────────
+  - name: merchandise-service
+    url: http://merchandise-service-v12:8000
+    protocol: http
+    connect_timeout: 10000
+    write_timeout: 60000
+    read_timeout: 60000
+    retries: 2
+
+    routes:
+      # Main API route — catches all /api/* traffic
+      - name: merchandise-api
+        paths:
+          - /api
+        strip_path: false
+        preserve_host: true
+        protocols:
+          - http
+          - https
+        methods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+
+    plugins:
+      # ── CORS ──────────────────────────────────────
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+            - Origin
+            - X-Requested-With
+          exposed_headers:
+            - X-Auth-Token
+          credentials: true
+          max_age: 3600
+
+      # ── Rate Limiting ─────────────────────────────
+      - name: rate-limiting
+        config:
+          minute: 120
+          hour: 3600
+          policy: local
+          fault_tolerant: true
+          hide_client_headers: false
+
+      # ── Request Size Limit ────────────────────────
+      - name: request-size-limiting
+        config:
+          allowed_payload_size: 10   # MB (for file uploads, PDF, etc.)
+          size_unit: megabytes
+
+  # ── Merchandise Health Check ──────────────────────
+  - name: merchandise-health
+    url: http://merchandise-service-v12:8000
+    protocol: http
+
+    routes:
+      - name: merchandise-health-check
+        paths:
+          - /up
+        strip_path: false
+        protocols:
+          - http
+          - https
+        methods:
+          - GET
+
+  # ── Catalogue Service (untouched) ─────────────────
+  # Uncomment and adjust if catalogue-service-v12 is
+  # also being routed through this Kong instance.
+  #
+  # - name: catalogue-service
+  #   url: http://catalogue-service-v12:8000
+  #   protocol: http
+  #   routes:
+  #     - name: catalogue-api
+  #       paths:
+  #         - /v2/catalogue
+  #       strip_path: false
+  #       preserve_host: true
+  #       protocols:
+  #         - http
+  #         - https
+
+# ═════════════════════════════════════════════════════
+# Global Plugins (optional, apply to all services)
+# ═════════════════════════════════════════════════════
+
+# Uncomment to enable request/response logging
+# plugins:
+#   - name: file-log
+#     config:
+#       path: /dev/stdout
+#       reopen: true

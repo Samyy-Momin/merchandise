@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use App\Http\Resources\ProductResource;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +12,9 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Product::query()->with(['categoryRelation:id,name']);
+            $query = Product::query()
+                ->select(['id','name','price','image_url','category_id'])
+                ->with(['categoryRelation:id,name']);
 
             // Support both 'search' and legacy 'q' param
             $search = $request->query('search', $request->query('q'));
@@ -35,7 +36,10 @@ class ProductController extends Controller
                 $query->where('price', '<=', (float)$max);
             }
 
-            $products = $query->orderBy('id', 'desc')->paginate(10);
+            // Respect per_page (cap to 50) and include in cache key
+            $perPage = (int) $request->query('per_page', 10);
+            if ($perPage < 1) { $perPage = 10; }
+            if ($perPage > 50) { $perPage = 50; }
 
             // Cache per filter set for 5 minutes
             $cacheKey = 'products:' . md5(json_encode([
@@ -44,17 +48,65 @@ class ProductController extends Controller
                 'min' => $request->query('min'),
                 'max' => $request->query('max'),
                 'page' => $request->query('page', 1),
+                'per_page' => $perPage,
             ]));
 
             try {
-                $data = Cache::remember($cacheKey, 300, function () use ($products) {
-                    return ProductResource::collection($products)->response()->getData(true);
+                $t0 = microtime(true);
+                $wasPresent = Cache::has($cacheKey);
+                // Build data inside the cache closure to avoid DB work on cache hit
+                $data = Cache::remember($cacheKey, 300, function () use ($query, $perPage) {
+                    $t1 = microtime(true);
+                    $products = (clone $query)->orderBy('id', 'desc')->paginate($perPage);
+                    $t2 = microtime(true);
+                    // Map collection to expected shape while keeping paginator meta at top-level
+                    $mapped = $products->getCollection()->map(function ($p) {
+                        $cat = $p->categoryRelation;
+                        return [
+                            'id' => $p->id,
+                            'name' => $p->name,
+                            'price' => (float) $p->price,
+                            'image_url' => $p->image_url,
+                            'category' => $cat ? ['id' => $cat->id, 'name' => $cat->name] : null,
+                        ];
+                    });
+                    $products->setCollection($mapped);
+                    $payload = $products->toArray();
+                    $t3 = microtime(true);
+                    \Log::info('perf.products.index', [
+                        'cache_hit' => false,
+                        'durations_ms' => [
+                            'query' => round(($t2-$t1)*1000),
+                            'serialize' => round(($t3-$t2)*1000),
+                            'total_closure' => round(($t3-$t1)*1000),
+                        ],
+                    ]);
+                    return $payload;
                 });
+                if ($wasPresent) {
+                    $tAfter = microtime(true);
+                    \Log::info('perf.products.index', [
+                        'cache_hit' => true,
+                        'durations_ms' => [ 'total' => round(($tAfter-$t0)*1000) ],
+                    ]);
+                }
             } catch (\Throwable $e) {
                 Log::warning('Products cache unavailable, falling back', [
                     'error' => $e->getMessage(),
                 ]);
-                $data = ProductResource::collection($products)->response()->getData(true);
+                $products = $query->orderBy('id', 'desc')->paginate($perPage);
+                $mapped = $products->getCollection()->map(function ($p) {
+                    $cat = $p->categoryRelation;
+                    return [
+                        'id' => $p->id,
+                        'name' => $p->name,
+                        'price' => (float) $p->price,
+                        'image_url' => $p->image_url,
+                        'category' => $cat ? ['id' => $cat->id, 'name' => $cat->name] : null,
+                    ];
+                });
+                $products->setCollection($mapped);
+                $data = $products->toArray();
             }
 
             return response()->json($data);

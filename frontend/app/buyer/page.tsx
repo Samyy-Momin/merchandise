@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getCategoriesCached } from "@/lib/api";
 import type { Category } from "@/types";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
+import { CardGridSkeleton } from "@/components/ui/page-skeleton";
 
 export default function BuyerHome() {
   const router = useRouter();
@@ -14,10 +15,10 @@ export default function BuyerHome() {
 
   useEffect(() => {
     let mounted = true;
-    apiFetch("/api/categories")
-      .then((res) => {
+    getCategoriesCached()
+      .then((list) => {
         if (!mounted) return;
-        setCategories(Array.isArray(res) ? res as Category[] : []);
+        setCategories(list);
       })
       .catch((e: any) => {
         if (!mounted) return;
@@ -27,7 +28,7 @@ export default function BuyerHome() {
     return () => { mounted = false; };
   }, []);
 
-  if (loading) return <div className="text-sm">Loading categories…</div>;
+  if (loading) return <CardGridSkeleton count={8} />;
   if (error) return <div className="text-sm text-red-600">{error}</div>;
 
   return (

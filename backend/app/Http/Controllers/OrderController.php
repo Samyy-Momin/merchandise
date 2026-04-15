@@ -60,7 +60,7 @@ class OrderController extends Controller
         $roles = $request->attributes->get('kc_roles', []);
 
         $query = Order::with(['items.product', 'address', 'approvals', 'shipment.logs']);
-        if (!in_array('approver', $roles, true) && !in_array('vendor', $roles, true)) {
+        if (!in_array('approver', $roles, true) && !in_array('vendor', $roles, true) && !in_array('admin', $roles, true) && !in_array('super_admin', $roles, true)) {
             // Buyers can only view their own orders. Approvers and Vendors can view any order.
             $query->where('user_id', $userId);
         }
@@ -76,7 +76,7 @@ class OrderController extends Controller
         $roles = $request->attributes->get('kc_roles', []);
 
         $query = Order::with(['shipment.logs']);
-        if (!in_array('approver', $roles, true) && !in_array('vendor', $roles, true)) {
+        if (!in_array('approver', $roles, true) && !in_array('vendor', $roles, true) && !in_array('admin', $roles, true) && !in_array('super_admin', $roles, true)) {
             // Buyer must own the order
             $query->where('user_id', $userId);
         }
@@ -242,7 +242,7 @@ class OrderController extends Controller
         $roles = $request->attributes->get('kc_roles', []);
 
         $orderQuery = Order::with(['items.product', 'acknowledgements.items', 'issues', 'shipment.items']);
-        if (!in_array('approver', $roles, true) && !in_array('vendor', $roles, true)) {
+        if (!in_array('approver', $roles, true) && !in_array('vendor', $roles, true) && !in_array('admin', $roles, true) && !in_array('super_admin', $roles, true)) {
             $orderQuery->where('user_id', $userId);
         }
         $order = $orderQuery->findOrFail($id);

@@ -30,7 +30,7 @@ class AdminProductController extends Controller
                 'image_url' => $data['image_url'] ?? null,
             ]);
 
-            return (new ProductResource($product->load('categoryRelation:id,name')))->response();
+            return (new ProductResource($product->load('categoryRelation:id,name')))->response()->setStatusCode(200);
         } catch (\Throwable $e) {
             Log::error('Admin create product failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Failed to create product'], 422);

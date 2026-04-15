@@ -8,6 +8,12 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration {
     public function up(): void
     {
+        // Only run on MySQL; skip on SQLite/Postgres to avoid driver-specific SQL errors
+        $driver = DB::getDriverName();
+        if ($driver !== 'mysql') {
+            return;
+        }
+
         // Read existing indexes to avoid duplicate index errors
         $existing = collect(DB::select('SHOW INDEX FROM products'))
             ->pluck('Key_name')

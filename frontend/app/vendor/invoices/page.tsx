@@ -51,7 +51,8 @@ export default function VendorInvoices() {
                   <td className="p-2 space-x-2">
                     <button className="underline" onClick={() => openInvoicePdf(r.order_id)}>PDF</button>
                     <button className="underline" onClick={() => downloadInvoiceExcel(r.order_id)}>Excel</button>
-                    <a className="underline" href={`/vendor/orders/${r.order_id}`}>View Details</a>
+                    <a className="underline" href={`/vendor/orders/${r.order_id}`}>Order</a>
+                    <a className="underline" href={`/vendor/invoices/${r.order_id}`}>Invoice</a>
                   </td>
                 </tr>
               ))}

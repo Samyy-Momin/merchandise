@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import Link from "next/link";
 import type { Order } from "@/types";
 
-export default function VendorOrders() {
+export function VendorOrdersView({ baseRoute = "/vendor/orders" }: { baseRoute?: string }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,14 +41,14 @@ export default function VendorOrders() {
           <button key={b.k} className={`border px-3 py-1 ${filter===b.k?'font-semibold':''}`} onClick={() => setFilter(b.k)}>{b.t}</button>
         ))}
       </div>
-      {loading ? <div className="text-sm">Loading…</div> : orders.length === 0 ? (
+      {loading ? <TableSkeleton rows={5} /> : orders.length === 0 ? (
         <div className="text-sm text-muted-foreground">No orders ready to process.</div>
       ) : (
         <ul className="space-y-2 text-sm">
           {orders.map((o) => (
             <li key={o.id} className="border p-3 flex items-center justify-between">
               <div>Order #{o.id} — {o.status}</div>
-              <a className="underline" href={`/vendor/orders/${o.id}`}>View Details</a>
+              <Link className="underline" href={`${baseRoute}/${o.id}`}>View Details</Link>
             </li>
           ))}
         </ul>
@@ -55,3 +56,7 @@ export default function VendorOrders() {
     </div>
   );
 }
+export default function VendorOrders() {
+  return <VendorOrdersView baseRoute="/vendor/orders" />;
+}
+import { TableSkeleton } from "@/components/ui/page-skeleton";

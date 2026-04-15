@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import type { Order } from "@/types";
 import { Card } from "@/components/ui/card";
+import Link from "next/link";
 import { Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/table";
 
 export default function BuyerDashboard() {
@@ -101,7 +102,7 @@ export default function BuyerDashboard() {
                       <Td className="capitalize">{o.status}</Td>
                       <Td className="text-right">₹ {Number(o.total_amount).toFixed(2)}</Td>
                       <Td className="text-right">{o.items?.length ?? 0}</Td>
-                      <Td className="text-right"><a className="underline" href={`/buyer/orders/${o.id}`}>View</a></Td>
+                      <Td className="text-right"><Link className="underline" href={`/buyer/orders/${o.id}`}>View</Link></Td>
                     </Tr>
                   ))
                 )}

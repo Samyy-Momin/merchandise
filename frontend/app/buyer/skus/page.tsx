@@ -1,6 +1,6 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getCategoriesCached } from "@/lib/api";
 import type { Product, Category } from "@/types";
 import { useEffect, useMemo, useState } from "react";
 import { Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/table";
@@ -49,30 +49,31 @@ export default function BuyerSkus() {
   const [categories, setCategories] = useState<Category[]>([]);
 
   const searchParams = useSearchParams();
+  const [initialized, setInitialized] = useState(false);
 
-  // Sync category from query param on mount/change
+  // Initialize filters from URL once on mount to avoid duplicate initial fetch
   useEffect(() => {
-    const cat = searchParams?.get("category");
-    setCategoryId(cat || "");
-    setPage(1);
-  }, [searchParams]);
+    const cat = searchParams?.get("category") || "";
+    const s = searchParams?.get("search") || "";
+    const pRaw = searchParams?.get("page") || "1";
+    const pNum = Number.parseInt(pRaw, 10);
+    const minRaw = searchParams?.get("min") || "";
+    const maxRaw = searchParams?.get("max") || "";
+    setCategoryId(cat);
+    setSearch(s);
+    setMin(minRaw);
+    setMax(maxRaw);
+    setPage(Number.isFinite(pNum) && pNum > 0 ? pNum : 1);
+    setInitialized(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Sync search from query param on mount/change
-  useEffect(() => {
-    const s = (searchParams?.get("search") || "");
-    setSearch((prev) => (prev === s ? prev : s));
-  }, [searchParams]);
-
-  // Load categories for dropdown
+  // Load categories for dropdown (cached in-memory)
   useEffect(() => {
     let mounted = true;
-    apiFetch("/api/categories")
-      .then((res: unknown) => {
-        if (!mounted) return;
-        const list = Array.isArray(res) ? (res as Category[]) : [];
-        setCategories(list);
-      })
-      .catch(() => {/* ignore */});
+    getCategoriesCached()
+      .then((list) => { if (mounted) setCategories(list); })
+      .catch(() => { /* ignore */ });
     return () => { mounted = false; };
   }, []);
 
@@ -81,9 +82,11 @@ export default function BuyerSkus() {
   const debouncedMin = useDebounce(min, 500);
   const debouncedMax = useDebounce(max, 500);
 
-  // Fetch products with filters
+  // Fetch products with filters (with request cancellation)
   useEffect(() => {
-    let mounted = true;
+    if (!initialized) return;
+    let active = true;
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
@@ -99,8 +102,9 @@ export default function BuyerSkus() {
     params.set("page", String(page));
     params.set("per_page", "12");
     const url = `/api/products?${params.toString()}`;
-    apiFetch(url)
+    apiFetch(url, { signal: controller.signal })
       .then((res: unknown) => {
+        if (!active) return;
         const anyRes = res as any;
         const list = Array.isArray(anyRes?.data) ? anyRes.data : (Array.isArray(res) ? res : []);
         setProducts(list);
@@ -116,12 +120,14 @@ export default function BuyerSkus() {
         setPagination(meta);
       })
       .catch((e: unknown) => {
+        // Ignore abort errors
+        if ((e as any)?.name === 'AbortError') return;
         setError(e instanceof Error ? e.message : String(e));
       })
-      .finally(() => setLoading(false));
-    return () => { mounted = false; };
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; controller.abort(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryId, debouncedSearch, debouncedMin, debouncedMax, page]);
+  }, [initialized, categoryId, debouncedSearch, debouncedMin, debouncedMax, page]);
 
   const [pagination, setPagination] = useState<PageMeta>({ current_page: 1, last_page: 1 });
 
@@ -195,7 +201,7 @@ export default function BuyerSkus() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar */}
         <div className="lg:col-span-1">
-          <Card className="p-4 sticky top-[72px] z-20 bg-white">
+          <Card className="p-4 sticky top-[72px] z-20">
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="text-sm font-medium">Search</div>
