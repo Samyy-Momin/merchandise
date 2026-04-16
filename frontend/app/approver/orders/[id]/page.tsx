@@ -14,6 +14,7 @@ type AckSummary = { employee_code?: string; receiver_name?: string; rating?: num
 export default function ApproverOrderDetail() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const hydrated = useAuthStore((s) => s.hydrated);
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -280,4 +281,3 @@ export default function ApproverOrderDetail() {
     </div>
   );
 }
-  const hydrated = useAuthStore((s) => s.hydrated);

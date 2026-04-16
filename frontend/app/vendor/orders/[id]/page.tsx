@@ -97,7 +97,6 @@ export default function VendorOrderDetail() {
   };
 
   if (loading || !hydrated) return <div className="p-6 text-sm">Loading…</div>;
-  if (error) return <div className="p-6 text-sm text-red-600">{error}</div>;
   if (!order) return <div className="p-6 text-sm">Not found</div>;
 
   const items = (order.items || []) as OrderItem[];
@@ -119,6 +118,7 @@ export default function VendorOrderDetail() {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Order #{order.id}</h1>
         <div className="text-sm">Status: {order.status}</div>
+        {error && <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">{error}</div>}
       </div>
 
       <section className="rounded-[12px] border bg-white p-4 shadow-card text-sm">
@@ -174,9 +174,45 @@ export default function VendorOrderDetail() {
         }
         if (order.status === "processing") {
           return (
-            <section className="rounded-[12px] border bg-white p-4 shadow-card text-sm">
-              <div className="mb-2 font-medium">Next Action</div>
-              <button className="border px-3 py-1" onClick={doDispatch}>Dispatch</button>
+            <section className="rounded-[12px] border bg-white p-4 shadow-card text-sm space-y-3">
+              <div className="font-medium">Next Action: Dispatch Order</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Courier Name</label>
+                  <input
+                    className="w-full border px-2 py-1.5 rounded"
+                    placeholder="e.g. FedEx, BlueDart"
+                    value={tracking.courier_name}
+                    onChange={(e) => setTracking(prev => ({ ...prev, courier_name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Tracking Number</label>
+                  <input
+                    className="w-full border px-2 py-1.5 rounded"
+                    placeholder="Enter tracking ID"
+                    value={tracking.tracking_number}
+                    onChange={(e) => setTracking(prev => ({ ...prev, tracking_number: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Est. Delivery Date (Optional)</label>
+                  <input
+                    type="date"
+                    className="w-full border px-2 py-1.5 rounded"
+                    value={tracking.estimated_delivery_date}
+                    onChange={(e) => setTracking(prev => ({ ...prev, estimated_delivery_date: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="pt-1">
+                <button
+                  className="bg-black text-white px-6 py-2 rounded-md hover:bg-black/90 transition-colors"
+                  onClick={doDispatch}
+                >
+                  Confirm Dispatch
+                </button>
+              </div>
             </section>
           );
         }
